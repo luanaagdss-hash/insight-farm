@@ -69,8 +69,60 @@ def send_prompt_hf(prompt):
     except Exception as e:
         return None, f"JSON decode error: {e}"
 
-def generate_template_report(cultura, regiao, custo_variavel, custo_fixo, producao_esperada, preco_mercado, elasticidade, concorrencia, clima, ponto_equilibrio_unidades):
-    return f"""
+def generate_template_report(cultura, regiao, custo_variavel, custo_fixo,
+                             producao_esperada, preco_mercado, elasticidade,
+                             concorrencia, clima, ponto_equilibrio_unidades):
+    """
+    Template determinístico (fallback) com formatação segura.
+    Retorna um dicionário com 'text' (parágrafos) e 'formulas' (lista de latex strings).
+    """
+    # Garanta formatação numérica correta
+    cv = f"{custo_variavel:,.2f}"
+    cf = f"{custo_fixo:,.2f}"
+    pm = f"{preco_mercado:,.2f}"
+    pe = f"{ponto_equilibrio_unidades:,.0f}"
+    el = f"{elasticidade:.2f}"
+
+    text_lines = []
+    text_lines.append("(1) Interpretação microeconômica:")
+    text_lines.append(f"Cultura: {cultura} — Região: {regiao}.")
+    text_lines.append(f"Com custo variável por unidade de R$ {cv} e custo fixo total estimado em R$ {cf},")
+    text_lines.append(f"a produção esperada é de {producao_esperada} toneladas ao preço médio de R$ {pm}.")
+    text_lines.append(f"A margem unitária (preço - custo variável) e o ponto de equilíbrio orientam a decisão de plantio.")
+    text_lines.append(f"O ponto de equilíbrio estimado é de aproximadamente {pe} toneladas.\n")
+
+    text_lines.append("(2) Riscos e suposições:")
+    text_lines.append(f"Este relatório assume elasticidade-preço constante aproximada de {el}.")
+    text_lines.append(f"Riscos principais: variação climática ({clima}), flutuações de preço e custos, e reação da concorrência (≈ {concorrencia} produtores).")
+    text_lines.append("Mitigações: contratos futuros, seguros agrícolas e diversificação.\n")
+
+    text_lines.append("(3) Recomendação prática:")
+    text_lines.append("Recomenda-se testar políticas de venda antecipada (parcial) e realizar um experimento A/B em preço ou mix de canais para avaliar elasticidade real.")
+    text_lines.append("Métrica de sucesso: aumento do lucro líquido por hectare sem queda substancial no volume.\n")
+
+    text_lines.append("(4) Métricas para acompanhar:")
+    text_lines.append("Acompanhar mensalmente: lucro líquido por hectare, ponto de equilíbrio, custo marginal, receita média por tonelada, elasticidade observada e índice de competitividade regional.")
+
+    # Fórmulas em LaTeX (strings) — renderizaremos com st.latex no frontend
+    formulas = []
+    # margem unitária
+    formulas.append(r"\text{Margem unitária} = \text{Preço} - \text{Custo Variável}")
+    # custo médio total (exemplo)
+    formulas.append(r"\text{CMT} = \frac{\text{Custo Fixo Total} + \text{Custo Variável Total}}{\text{Produção Esperada}}")
+    # ponto de equilíbrio
+    formulas.append(r"\text{PE (ton)} = \frac{\text{Custo Fixo Total}}{\text{Preço} - \text{Custo Variável}}")
+
+    return {
+        "text": "\n\n".join(text_lines),
+        "formulas": formulas,
+        "values": {
+            "custo_variavel": cv,
+            "custo_fixo": cf,
+            "preco_mercado": pm,
+            "ponto_equilibrio": pe,
+            "elasticidade": el
+        }
+    }   return f"""
 (1) Interpretação microeconômica:
 Cultura: {cultura} — Região: {regiao}.
 Com custo variável por unidade de R$ {custo_variavel:.2f} e custo fixo total estimado em R$ {custo_fixo:.2f}, a produção esperada é de {producao_esperada} toneladas ao preço médio de R$ {preco_mercado:.2f}. A margem unitária (preço - custo variável) e o ponto de equilíbrio orientam a decisão de plantio. O ponto de equilíbrio estimado é de aproximadamente {ponto_equilibrio_unidades:,.0f} toneladas.
