@@ -64,7 +64,7 @@ def send_prompt_hf(prompt):
 
     try:
         r = requests.post(
-            f"https://api-inference.huggingface.co/models/{model}",
+            f"https://router.huggingface.co/hf-inference/models/{model}",
             headers=headers,
             json=payload,
             timeout=30
