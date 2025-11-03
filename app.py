@@ -5,16 +5,17 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import requests
-import time
 
-# === Helpers para IA: tenta suportar OpenAI (novo e antigo), Hugging Face, e fallback template ===
+# -----------------------
+# Helpers para IA
+# -----------------------
 
 def send_prompt_openai(prompt):
     """
     Tenta usar a API OpenAI:
     - se openai.OpenAI (nova lib) estiver presente, usa esse cliente
     - senão tenta usar openai.ChatCompletion (antiga 0.28)
-    Retorna (report, error_flag)
+    Retorna (report, error_message)
     """
     try:
         import openai
@@ -49,56 +50,74 @@ def send_prompt_openai(prompt):
 
 def send_prompt_hf(prompt):
     """
-    Usa Hugging Face Inference API se HF_TOKEN estiver presente.
-    Retorna (report, error_flag)
+    Usa Hugging Face Inference API.
+    Retorna (report, error_message)
     """
     HF_TOKEN = os.getenv("HF_TOKEN")
     if not HF_TOKEN:
         return None, "HF_TOKEN not set"
 
+    # Modelo mais estável para inference API (troque se quiser)
     model = "mistralai/Mistral-7B-Instruct-v0.1"
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {"inputs": prompt, "parameters": {"max_new_tokens": 400}}
-       if r.status_code != 200:
-    st.error(f"Erro HuggingFace: {r.status_code} - {r.text[:500]}")
-    st.stop()
 
     try:
-        r = requests.post(f"https://api-inference.huggingface.co/models/{model}", headers=headers, json=payload, timeout=30)
-        r.raise_for_status()
-        data = r.json()
-        # dependendo do modelo / endpoint a chave pode variar
-        if isinstance(data, list):
-            text = data[0].get("generated_text") or data[0].get("text") or str(data[0])
-        else:
-            text = data.get("generated_text") or str(data)
-        return text, None
+        r = requests.post(
+            f"https://api-inference.huggingface.co/models/{model}",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
     except Exception as e:
-        return None, str(e)
+        return None, f"Request failed: {e}"
+
+    if r.status_code != 200:
+        return None, f"HuggingFace error {r.status_code}: {r.text[:500]}"
+
+    try:
+        data = r.json()
+    except Exception as e:
+        return None, f"Erro ao decodificar JSON HF: {e}"
+
+    # extrai texto com segurança dependendo do formato retornado
+    if isinstance(data, list) and len(data) > 0:
+        text = data[0].get("generated_text") or data[0].get("text") or str(data[0])
+    elif isinstance(data, dict):
+        # alguns endpoints retornam {'generated_text': '...'} ou similar
+        text = data.get("generated_text") or data.get("text") or str(data)
+    else:
+        text = str(data)
+
+    return text, None
 
 def generate_template_report(cultura, regiao, custo_variavel, custo_fixo, producao_esperada, preco_mercado, elasticidade, concorrencia, clima, ponto_equilibrio_unidades):
-    # Template determinístico (fallback) — 4 parágrafos
+    """
+    Template determinístico (fallback) — 4 parágrafos
+    """
     report = f"""
 (1) Interpretação microeconômica:
 Cultura: {cultura} — Região: {regiao}.
-Com custo variável por unidade de R$ {custo_variavel:.2f} e custo fixo mensal estimado em R$ {custo_fixo:.2f}, a produção esperada é de {producao_esperada} toneladas ao preço médio de R$ {preco_mercado:.2f}. A margem unitária implícita (preço - custo variável) é um indicador-chave para a decisão de plantio. O ponto de equilíbrio estimado é de {ponto_equilibrio_unidades:.0f} unidades/toneladas.
+Com custo variável por unidade de R$ {custo_variavel:.2f} e custo fixo total estimado em R$ {custo_fixo:.2f}, a produção esperada é de {producao_esperada} toneladas ao preço médio de R$ {preco_mercado:.2f}. A margem unitária (preço - custo variável) e o ponto de equilíbrio orientam a decisão de plantio. O ponto de equilíbrio estimado é de aproximadamente {ponto_equilibrio_unidades:,.0f} unidades/toneladas.
 
 (2) Riscos e suposições:
-Este relatório assume elasticidade-preço constante aproximada de {elasticidade}. Riscos principais: variação climática ({clima}), flutuação de preços de mercado, e reação da concorrência (≈ {concorrencia} produtores). Estratégias de mitigação devem considerar contratos futuros, seguros agrícolas e diversificação de culturas.
+Este relatório assume elasticidade-preço constante aproximada de {elasticidade:.2f}. Riscos principais incluem variação climática ({clima}), flutuações de preço e custos, além de reação da concorrência (≈ {concorrencia} produtores). Mitigações: contratos futuros, seguros agrícolas e diversificação.
 
 (3) Recomendação prática:
-Com base nos dados, recomenda-se testar ajuste de área de plantio e políticas de venda que protejam margem. Considere um teste piloto (A/B) de preço/contrato: por exemplo, venda antecipada de parte da produção a preço fixo e venda spot do restante. Métrica de sucesso: lucro líquido por hectare e % de cobertura de custos fixos.
+Recomenda-se testar políticas de venda antecipada (parcial) e realizar um experimento A/B em preço ou mix de canais para avaliar elasticidade real. Métrica de sucesso: aumento do lucro líquido por hectare sem queda substancial no volume.
 
 (4) Métricas para acompanhar:
-Monitorar mensalmente: lucro líquido por hectare, ponto de equilíbrio, custo marginal, receita média por tonelada, elasticidade observada e índice de competitividade regional.
+Acompanhar mensalmente: lucro líquido por hectare, ponto de equilíbrio, custo marginal, receita média por tonelada, elasticidade observada, e índice de competitividade regional.
 """
     return report
 
-# === Interface Streamlit ===
+# -----------------------
+# Interface Streamlit
+# -----------------------
+
 st.set_page_config(page_title="InsightFarm — Estratégia Agrícola IA", layout="wide")
 st.title("InsightFarm — Estratégia de Produção Agrícola com IA")
-
-st.markdown("Preencha dados básicos da cultura e gere um relatório com recomendações microeconômicas.")
+st.markdown("Preencha os dados abaixo e gere um relatório com recomendações microeconômicas. (Fallback determinístico se nenhuma API estiver disponível)")
 
 with st.form("inputs"):
     col1, col2 = st.columns(2)
@@ -116,11 +135,10 @@ with st.form("inputs"):
     submitted = st.form_submit_button("Gerar relatório")
 
 if submitted:
-    # cálculos simples de apoio
+    # Cálculos simples de apoio
     margem_unitaria = preco_mercado - custo_variavel
     faturamento = preco_mercado * producao_esperada
     lucro = faturamento - (custo_fixo + custo_variavel * producao_esperada)
-    # ponto de equilíbrio (unidades) simplificado
     ponto_equilibrio_unidades = custo_fixo / max(margem_unitaria, 1e-6)
 
     st.subheader("Métricas básicas")
@@ -129,7 +147,7 @@ if submitted:
     st.write(f"Lucro esperado: R$ {lucro:,.2f}")
     st.write(f"Ponto de equilíbrio (ton): {ponto_equilibrio_unidades:,.0f}")
 
-    # gráfico (exemplo: lucro vs preço)
+    # Gráfico: lucro vs preço (simulação)
     precos = np.linspace(max(0.5, custo_variavel*0.8), preco_mercado*1.6, 25)
     lucros = []
     P0, Q0 = preco_mercado, producao_esperada
@@ -149,9 +167,9 @@ if submitted:
     ax.set_ylabel("Lucro estimado (R$)")
     st.pyplot(fig)
 
-    st.markdown(f"**Preço ótimo sugerido:** R$ {preco_otimo:.2f} — *Lucro estimado: R$ {lucro_otimo:,.2f}*")
+    st.markdown(f"**💰 Preço ótimo sugerido:** R$ {preco_otimo:.2f} — *Lucro estimado: R$ {lucro_otimo:,.2f}*")
 
-    # monta o prompt (para enviar à IA)
+    # Monta o prompt
     prompt = f"""
 Você é um economista agrícola especializado em microeconomia aplicada ao agronegócio.
 
@@ -180,32 +198,35 @@ Por favor, produza um relatório técnico com 4 seções:
 Seja objetivo e apresente recomendações práticas, citando as suposições.
 """
 
+    st.subheader("Relatório gerado pela IA / Fallback")
     # 1) tenta OpenAI (se disponível)
-    st.subheader("Relatório gerado pela IA")
     report, err = send_prompt_openai(prompt)
     if report:
         st.write(report)
+        text_to_download = report
     else:
-        # tenta Hugging Face
+        # 2) tenta Hugging Face
         hf_report, hf_err = send_prompt_hf(prompt)
         if hf_report:
             st.write(hf_report)
+            text_to_download = hf_report
         else:
-            # fallback: template determinístico
-            fallback = generate_template_report(cultura, regiao, custo_variavel, custo_fixo, producao_esperada, preco_mercado, elasticidade, concorrencia, clima, ponto_equilibrio_unidades)
+            # 3) fallback determinístico
+            fallback = generate_template_report(
+                cultura, regiao, custo_variavel, custo_fixo,
+                producao_esperada, preco_mercado, elasticidade,
+                concorrencia, clima, ponto_equilibrio_unidades
+            )
             st.info("Nenhuma API generativa disponível ou ocorreu erro; exibindo relatório gerado por template determinístico.")
             st.write(fallback)
-            # mostrar erros técnicos para debug (apenas para você, não exibir em demo)
+            text_to_download = fallback
+            # mostra erros de debug (apenas para você)
             st.write("---")
             st.write("Debug errors (OpenAI / HuggingFace):")
             st.write(err)
             st.write(hf_err)
 
-    # botão para download
-    try:
-        text_to_download = report if report else (hf_report if hf_report else fallback)
-    except Exception:
-        text_to_download = fallback
+    # Botão de download do relatório
     st.download_button("Baixar relatório (.txt)", text_to_download, file_name="insightfarm_report.txt", mime="text/plain")
 
 st.markdown("---")
