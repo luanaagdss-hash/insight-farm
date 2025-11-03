@@ -211,8 +211,6 @@ I) Conclusão (2 frases).
 Exija que o relatório explique claramente todas as suposições numéricas usadas e apresente resultados em R$ com duas casas decimais. Seja objetivo e formatado (A, B, C...). Não invente dados adicionais — use somente os valores fornecidos e calcule a partir deles.
 """
 
-"""
-
     st.subheader("Relatório gerado pela IA / Fallback")
     # 1) tenta OpenAI (se disponível)
     report, err = send_prompt_openai(prompt)
