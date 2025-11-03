@@ -120,9 +120,9 @@ def generate_template_report(cultura, regiao, custo_variavel, custo_fixo,
             "custo_fixo": cf,
             "preco_mercado": pm,
             "ponto_equilibrio": pe,
-            "elasticidade": el
+            "elasticidade": el   }
         
-        }  return f"""
+      return f"""
 (1) Interpretação microeconômica:
 Cultura: {cultura} — Região: {regiao}.
 Com custo variável por unidade de R$ {custo_variavel:.2f} e custo fixo total estimado em R$ {custo_fixo:.2f}, a produção esperada é de {producao_esperada} toneladas ao preço médio de R$ {preco_mercado:.2f}. A margem unitária (preço - custo variável) e o ponto de equilíbrio orientam a decisão de plantio. O ponto de equilíbrio estimado é de aproximadamente {ponto_equilibrio_unidades:,.0f} toneladas.
