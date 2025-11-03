@@ -55,15 +55,14 @@ def send_prompt_hf(prompt):
     HF_TOKEN = os.getenv("HF_TOKEN")
     if not HF_TOKEN:
         return None, "HF_TOKEN not set"
-    # exemplo de modelo: google/flan-t5-large (ajuste conforme disponibilidade)
+
     model = "mistralai/Mistral-7B-Instruct-v0.1"
-    
-    if r.status_code != 200:
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 400}}
+       if r.status_code != 200:
     st.error(f"Erro HuggingFace: {r.status_code} - {r.text[:500]}")
     st.stop()
 
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 400}}
     try:
         r = requests.post(f"https://api-inference.huggingface.co/models/{model}", headers=headers, json=payload, timeout=30)
         r.raise_for_status()
