@@ -169,33 +169,48 @@ if submitted:
 
     st.markdown(f"**💰 Preço ótimo sugerido:** R$ {preco_otimo:.2f} — *Lucro estimado: R$ {lucro_otimo:,.2f}*")
 
-    # Monta o prompt
-    prompt = f"""
-Você é um economista agrícola especializado em microeconomia aplicada ao agronegócio.
+   # Monta o prompt
+prompt = f"""
+Você é um economista agrícola sênior com forte domínio de microeconomia aplicada, precificação, experimentos A/B e elaboração de relatórios técnicos executáveis.
 
-Dados:
+Dados (use os valores fornecidos):
 - Cultura: {cultura}
 - Região: {regiao}
-- Custo variável por unidade: R$ {custo_variavel:.2f}
-- Custo fixo total estimado: R$ {custo_fixo:.2f}
-- Produção esperada: {producao_esperada} toneladas
-- Preço médio de mercado: R$ {preco_mercado:.2f}
+- Custo variável por unidade (R$): {custo_variavel}
+- Custo fixo total estimado (R$): {custo_fixo}
+- Produção esperada (ton): {producao_esperada}
+- Preço médio de mercado (R$/ton): {preco_mercado}
 - Elasticidade-preço estimada: {elasticidade}
-- Concorrência regional: {concorrencia}
-- Expectativa de clima: {clima}
+- Concorrência regional (nº produtores): {concorrencia}
+- Expectativa climática: {clima}
+- Resultado da simulação (preço ótimo: R$ {preco_otimo:.2f}, lucro estimado: R$ {lucro_otimo:,.2f}, ponto de equilíbrio: {ponto_equilibrio_unidades:.0f} tons)
 
-Resultados da simulação:
-- Preço ótimo sugerido: R$ {preco_otimo:.2f}
-- Lucro estimado (para esse preço): R$ {lucro_otimo:,.2f}
-- Ponto de equilíbrio (ton): {ponto_equilibrio_unidades:.0f}
+Objetivo: gere um RELATÓRIO TÉCNICO COMPLETO com seções numeradas e cabeçalhos claros. Use linguagem técnica, mas com recomendações práticas e executáveis. Inclua fórmulas, tabelas resumidas em texto e um plano de ação.
 
-Por favor, produza um relatório técnico com 4 seções:
-1) Análise microeconômica da situação atual (oferta/demanda, custo marginal, ponto de equilíbrio).
-2) Cálculo e interpretação do preço ótimo e volume ideal de produção.
-3) Riscos e estratégias de mitigação (clima, preço, concorrência).
-4) Recomendações práticas e métricas de acompanhamento (lucro por hectare, CAC agrícola se aplicável, LTV do cliente cooperado, ticket, margem).
+Estrutura requerida:
+A) Resumo executivo (3–4 frases) com recomendação principal.
+B) Análise microeconômica detalhada:
+   - Interprete elasticidade, margem unitária, custo marginal e custo médio.
+   - Calcule e explique o ponto de equilíbrio (unidades/ton) e sensibilidade ao preço.
+C) Cenários (Pessimista / Base / Otimista):
+   - Defina variações plausíveis (% de preço e % de volume).
+   - Para cada cenário, apresente: preço, quantidade, faturamento, custo total e lucro.
+   - Apresente uma tabela resumida (texto/tabular).
+D) Sensibilidade por preço:
+   - Mostre lucros para -10%, -5%, 0%, +5%, +10% no preço.
+   - Identifique preço reserva (preço mínimo que cobre custo variável) e confirme preço que maximiza lucro.
+E) Design de teste A/B para precificação:
+   - Hipótese nula e alternativa.
+   - Tamanho de amostra sugerido (estimativa prática), duração, métricas primárias e secundárias.
+   - Regra de decisão para adotar o novo preço.
+F) Riscos e mitigação operacional (clima, mercado, logística) com ações concretas.
+G) KPIs e fórmulas: liste e defina (ex.: CAC, LTV, margem bruta, margem líquida, ticket médio).
+H) Plano de ação (6 passos) para 8 semanas, com responsáveis e entregáveis.
+I) Conclusão (2 frases).
 
-Seja objetivo e apresente recomendações práticas, citando as suposições.
+Exija que o relatório explique claramente todas as suposições numéricas usadas e apresente resultados em R$ com duas casas decimais. Seja objetivo e formatado (A, B, C...). Não invente dados adicionais — use somente os valores fornecidos e calcule a partir deles.
+"""
+
 """
 
     st.subheader("Relatório gerado pela IA / Fallback")
