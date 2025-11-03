@@ -120,7 +120,8 @@ def generate_template_report(cultura, regiao, custo_variavel, custo_fixo,
             "custo_fixo": cf,
             "preco_mercado": pm,
             "ponto_equilibrio": pe,
-            "elasticidade": el   }
+            "elasticidade": el   
+        }
         
       return f"""
 (1) Interpretação microeconômica:
